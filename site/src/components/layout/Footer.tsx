@@ -75,7 +75,7 @@ export default function Footer() {
                   aria-label={social.label}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-2 border-2 transition-transform duration-150 border-graphite rounded-micro text-ink hover:-translate-y-1 hover:bg-softBlue"
+                  className="p-2 border-0 transition-transform duration-150 rounded-micro text-ink hover:-translate-y-1 hover:bg-softBlue"
                 >
                   <Icon size={20} />
                 </a>
