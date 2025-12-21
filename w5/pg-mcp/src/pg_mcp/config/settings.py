@@ -92,6 +92,12 @@ class SecurityConfig(BaseSettings):
     max_execution_time: float = Field(
         default=30.0, ge=1.0, le=300.0, description="Maximum query execution time in seconds"
     )
+    readonly_role: str | None = Field(
+        default=None, description="PostgreSQL role to switch to for read-only access"
+    )
+    safe_search_path: str = Field(
+        default="public", description="Safe search_path to set during query execution"
+    )
 
     @field_validator("blocked_functions", mode="before")
     @classmethod
@@ -112,6 +118,18 @@ class ValidationConfig(BaseSettings):
     )
     min_confidence_score: int = Field(
         default=70, ge=0, le=100, description="Minimum confidence score (0-100)"
+    )
+
+    # Result validation settings
+    enabled: bool = Field(default=True, description="Enable result validation using LLM")
+    sample_rows: int = Field(
+        default=5, ge=1, le=100, description="Number of sample rows to include in validation"
+    )
+    timeout_seconds: float = Field(
+        default=10.0, ge=1.0, le=60.0, description="Result validation timeout in seconds"
+    )
+    confidence_threshold: int = Field(
+        default=70, ge=0, le=100, description="Minimum confidence for acceptable results"
     )
 
 

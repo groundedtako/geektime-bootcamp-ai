@@ -5,7 +5,7 @@ It ensures that only safe, read-only queries are executed and blocks potentially
 dangerous operations.
 """
 
-from typing import Any
+from typing import ClassVar
 
 import sqlglot
 from sqlglot import exp
@@ -26,13 +26,17 @@ class SQLValidator:
     """
 
     # Allowed statement types at the top level (including set operations)
-    ALLOWED_STATEMENT_TYPES = {exp.Select, exp.Union, exp.Intersect, exp.Except}
+    ALLOWED_STATEMENT_TYPES: ClassVar = {
+        exp.Select, exp.Union, exp.Intersect, exp.Except
+    }
 
     # Allowed top-level expressions (including CTEs)
-    ALLOWED_TOP_LEVEL = {exp.Select, exp.Union, exp.Intersect, exp.Except, exp.With, exp.Subquery}
+    ALLOWED_TOP_LEVEL: ClassVar = {
+        exp.Select, exp.Union, exp.Intersect, exp.Except, exp.With, exp.Subquery
+    }
 
     # Forbidden statement types
-    FORBIDDEN_STATEMENT_TYPES = {
+    FORBIDDEN_STATEMENT_TYPES: ClassVar = {
         exp.Insert,
         exp.Update,
         exp.Delete,
@@ -48,7 +52,7 @@ class SQLValidator:
     }
 
     # Built-in dangerous PostgreSQL functions
-    BUILTIN_DANGEROUS_FUNCTIONS = {
+    BUILTIN_DANGEROUS_FUNCTIONS: ClassVar = {
         "pg_sleep",
         "pg_terminate_backend",
         "pg_cancel_backend",
@@ -86,14 +90,14 @@ class SQLValidator:
             allow_explain: Whether to allow EXPLAIN statements.
         """
         self.config = config
-        self.blocked_tables = set(t.lower() for t in (blocked_tables or []))
-        self.blocked_columns = set(c.lower() for c in (blocked_columns or []))
+        self.blocked_tables = {t.lower() for t in (blocked_tables or [])}
+        self.blocked_columns = {c.lower() for c in (blocked_columns or [])}
         self.allow_explain = allow_explain
 
         # Combine built-in dangerous functions with custom blocked functions
-        self.blocked_functions = self.BUILTIN_DANGEROUS_FUNCTIONS | set(
+        self.blocked_functions = self.BUILTIN_DANGEROUS_FUNCTIONS | {
             f.lower() for f in config.blocked_functions
-        )
+        }
 
     def validate(self, sql: str) -> tuple[bool, str | None]:
         """Validate SQL query for security compliance.

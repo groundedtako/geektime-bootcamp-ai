@@ -8,13 +8,14 @@ import re
 from typing import TYPE_CHECKING
 
 from openai import AsyncOpenAI
-from openai.types.chat import ChatCompletion
 
 from pg_mcp.config.settings import OpenAIConfig
 from pg_mcp.models.errors import LLMError, LLMTimeoutError, LLMUnavailableError
 from pg_mcp.prompts.sql_generation import SQL_GENERATION_SYSTEM_PROMPT, build_user_prompt
 
 if TYPE_CHECKING:
+    from openai.types.chat import ChatCompletion
+
     from pg_mcp.models.schema import DatabaseSchema
 
 
@@ -41,9 +42,7 @@ class SQLGenerator:
             config: OpenAI configuration including API key and model settings.
         """
         self.config = config
-        self.client = AsyncOpenAI(
-            api_key=config.api_key.get_secret_value(), timeout=config.timeout
-        )
+        self.client = AsyncOpenAI(api_key=config.api_key.get_secret_value(), timeout=config.timeout)
 
     async def generate(
         self,

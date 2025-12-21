@@ -5,7 +5,7 @@ expiration, and auto-refresh capabilities.
 """
 
 import asyncio
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
@@ -74,7 +74,7 @@ class TestSchemaCache:
         """Test that get returns None when caching is disabled."""
         cache = SchemaCache(disabled_cache_config)
         cache._cache["test_db"] = sample_schema
-        cache._cache_timestamps["test_db"] = datetime.now(timezone.utc)
+        cache._cache_timestamps["test_db"] = datetime.now(UTC)
 
         result = cache.get("test_db")
         assert result is None
@@ -87,9 +87,7 @@ class TestSchemaCache:
         sample_schema: DatabaseSchema,
     ):
         """Test that load stores schema in cache."""
-        with patch(
-            "pg_mcp.cache.schema_cache.SchemaIntrospector"
-        ) as mock_introspector_class:
+        with patch("pg_mcp.cache.schema_cache.SchemaIntrospector") as mock_introspector_class:
             mock_introspector = AsyncMock()
             mock_introspector.introspect.return_value = sample_schema
             mock_introspector_class.return_value = mock_introspector
@@ -109,9 +107,7 @@ class TestSchemaCache:
         """Test that load doesn't cache when caching is disabled."""
         cache = SchemaCache(disabled_cache_config)
 
-        with patch(
-            "pg_mcp.cache.schema_cache.SchemaIntrospector"
-        ) as mock_introspector_class:
+        with patch("pg_mcp.cache.schema_cache.SchemaIntrospector") as mock_introspector_class:
             mock_introspector = AsyncMock()
             mock_introspector.introspect.return_value = sample_schema
             mock_introspector_class.return_value = mock_introspector
@@ -131,7 +127,7 @@ class TestSchemaCache:
     ):
         """Test that get_cache_age calculates correct age."""
         # Set cache with timestamp 100 seconds ago
-        past_time = datetime.now(timezone.utc) - timedelta(seconds=100)
+        past_time = datetime.now(UTC) - timedelta(seconds=100)
         cache._cache["test_db"] = sample_schema
         cache._cache_timestamps["test_db"] = past_time
 
@@ -140,12 +136,10 @@ class TestSchemaCache:
         assert age is not None
         assert 95 <= age <= 105  # Allow small time variance
 
-    def test_get_returns_none_when_expired(
-        self, cache: SchemaCache, sample_schema: DatabaseSchema
-    ):
+    def test_get_returns_none_when_expired(self, cache: SchemaCache, sample_schema: DatabaseSchema):
         """Test that get returns None when cache is expired."""
         # Set cache with expired timestamp (2 hours ago, TTL is 1 hour)
-        expired_time = datetime.now(timezone.utc) - timedelta(hours=2)
+        expired_time = datetime.now(UTC) - timedelta(hours=2)
         cache._cache["test_db"] = sample_schema
         cache._cache_timestamps["test_db"] = expired_time
 
@@ -156,13 +150,11 @@ class TestSchemaCache:
         assert "test_db" not in cache._cache
         assert "test_db" not in cache._cache_timestamps
 
-    def test_get_returns_schema_when_valid(
-        self, cache: SchemaCache, sample_schema: DatabaseSchema
-    ):
+    def test_get_returns_schema_when_valid(self, cache: SchemaCache, sample_schema: DatabaseSchema):
         """Test that get returns schema when cache is valid."""
         # Set cache with recent timestamp
         cache._cache["test_db"] = sample_schema
-        cache._cache_timestamps["test_db"] = datetime.now(timezone.utc)
+        cache._cache_timestamps["test_db"] = datetime.now(UTC)
 
         result = cache.get("test_db")
 
@@ -177,13 +169,11 @@ class TestSchemaCache:
     ):
         """Test that refresh updates existing cache."""
         # Set initial cache
-        old_time = datetime.now(timezone.utc) - timedelta(minutes=30)
+        old_time = datetime.now(UTC) - timedelta(minutes=30)
         cache._cache["test_db"] = sample_schema
         cache._cache_timestamps["test_db"] = old_time
 
-        with patch(
-            "pg_mcp.cache.schema_cache.SchemaIntrospector"
-        ) as mock_introspector_class:
+        with patch("pg_mcp.cache.schema_cache.SchemaIntrospector") as mock_introspector_class:
             mock_introspector = AsyncMock()
             mock_introspector.introspect.return_value = sample_schema
             mock_introspector_class.return_value = mock_introspector
@@ -200,9 +190,9 @@ class TestSchemaCache:
     ):
         """Test that clear removes specific database from cache."""
         cache._cache["test_db"] = sample_schema
-        cache._cache_timestamps["test_db"] = datetime.now(timezone.utc)
+        cache._cache_timestamps["test_db"] = datetime.now(UTC)
         cache._cache["other_db"] = sample_schema
-        cache._cache_timestamps["other_db"] = datetime.now(timezone.utc)
+        cache._cache_timestamps["other_db"] = datetime.now(UTC)
 
         cache.clear("test_db")
 
@@ -211,14 +201,12 @@ class TestSchemaCache:
         assert "other_db" in cache._cache
         assert "other_db" in cache._cache_timestamps
 
-    def test_clear_removes_all_databases(
-        self, cache: SchemaCache, sample_schema: DatabaseSchema
-    ):
+    def test_clear_removes_all_databases(self, cache: SchemaCache, sample_schema: DatabaseSchema):
         """Test that clear with no argument removes all databases."""
         cache._cache["test_db"] = sample_schema
-        cache._cache_timestamps["test_db"] = datetime.now(timezone.utc)
+        cache._cache_timestamps["test_db"] = datetime.now(UTC)
         cache._cache["other_db"] = sample_schema
-        cache._cache_timestamps["other_db"] = datetime.now(timezone.utc)
+        cache._cache_timestamps["other_db"] = datetime.now(UTC)
 
         cache.clear()
 
@@ -230,9 +218,9 @@ class TestSchemaCache:
     ):
         """Test that get_cached_databases returns all cached database names."""
         cache._cache["db1"] = sample_schema
-        cache._cache_timestamps["db1"] = datetime.now(timezone.utc)
+        cache._cache_timestamps["db1"] = datetime.now(UTC)
         cache._cache["db2"] = sample_schema
-        cache._cache_timestamps["db2"] = datetime.now(timezone.utc)
+        cache._cache_timestamps["db2"] = datetime.now(UTC)
 
         databases = cache.get_cached_databases()
 
@@ -256,9 +244,7 @@ class TestSchemaCache:
         assert cache._refresh_task is None
 
     @pytest.mark.asyncio
-    async def test_start_auto_refresh_starts_task(
-        self, cache: SchemaCache, mock_pool: Mock
-    ):
+    async def test_start_auto_refresh_starts_task(self, cache: SchemaCache, mock_pool: Mock):
         """Test that auto-refresh starts background task."""
         pools = {"test_db": mock_pool}
 
@@ -287,9 +273,7 @@ class TestSchemaCache:
         await cache.stop_auto_refresh()
 
     @pytest.mark.asyncio
-    async def test_stop_auto_refresh_stops_task(
-        self, cache: SchemaCache, mock_pool: Mock
-    ):
+    async def test_stop_auto_refresh_stops_task(self, cache: SchemaCache, mock_pool: Mock):
         """Test that stop_auto_refresh stops the background task."""
         pools = {"test_db": mock_pool}
 
@@ -318,15 +302,13 @@ class TestSchemaCache:
     ):
         """Test that auto-refresh loop refreshes cached schemas."""
         # Pre-populate cache
-        old_time = datetime.now(timezone.utc) - timedelta(minutes=30)
+        old_time = datetime.now(UTC) - timedelta(minutes=30)
         cache._cache["test_db"] = sample_schema
         cache._cache_timestamps["test_db"] = old_time
 
         pools = {"test_db": mock_pool}
 
-        with patch(
-            "pg_mcp.cache.schema_cache.SchemaIntrospector"
-        ) as mock_introspector_class:
+        with patch("pg_mcp.cache.schema_cache.SchemaIntrospector") as mock_introspector_class:
             mock_introspector = AsyncMock()
             mock_introspector.introspect.return_value = sample_schema
             mock_introspector_class.return_value = mock_introspector
@@ -354,13 +336,11 @@ class TestSchemaCache:
     ):
         """Test that auto-refresh continues after exceptions."""
         cache._cache["test_db"] = sample_schema
-        cache._cache_timestamps["test_db"] = datetime.now(timezone.utc)
+        cache._cache_timestamps["test_db"] = datetime.now(UTC)
 
         pools = {"test_db": mock_pool}
 
-        with patch(
-            "pg_mcp.cache.schema_cache.SchemaIntrospector"
-        ) as mock_introspector_class:
+        with patch("pg_mcp.cache.schema_cache.SchemaIntrospector") as mock_introspector_class:
             # Make introspection fail
             mock_introspector = AsyncMock()
             mock_introspector.introspect.side_effect = Exception("Test error")

@@ -1,21 +1,44 @@
 """Main entry point for PostgreSQL MCP Server.
 
-This module provides the CLI entry point for running the MCP server.
+This module provides the CLI entry point for running the MCP server
+using FastMCP with stdio transport.
 """
 
+import asyncio
 import sys
+
+from pg_mcp.server import run_server
 
 
 def main() -> None:
-    """Main entry point for the application.
+    """Main entry point for the PostgreSQL MCP Server.
 
-    This is a placeholder that will be implemented in Phase 2.
+    This function starts the FastMCP server using stdio transport,
+    enabling communication with MCP clients.
+
+    The server lifecycle is managed through the lifespan context manager,
+    which handles:
+    - Configuration loading
+    - Database connection pool creation
+    - Schema cache initialization
+    - Service component setup
+    - Graceful shutdown
+
+    Example:
+        Run the server:
+        >>> python -m pg_mcp
+
+        Run with environment variables:
+        >>> DATABASE_HOST=localhost DATABASE_NAME=mydb python -m pg_mcp
     """
-    print("PostgreSQL MCP Server v0.1.0")
-    print("Phase 0 and Phase 1 implementation complete.")
-    print("Run tests with: pytest tests/")
-    print("Type checking with: mypy src/")
-    sys.exit(0)
+    try:
+        asyncio.run(run_server())
+    except KeyboardInterrupt:
+        print("\nServer stopped by user")
+        sys.exit(0)
+    except Exception as e:
+        print(f"Fatal error: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

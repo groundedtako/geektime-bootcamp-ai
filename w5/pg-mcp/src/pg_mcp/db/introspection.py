@@ -5,7 +5,6 @@ extracting comprehensive metadata about tables, columns, constraints, indexes,
 and custom types.
 """
 
-from typing import Any
 
 from asyncpg import Pool
 from asyncpg.connection import Connection
@@ -67,9 +66,7 @@ class SchemaIntrospector:
 
             # Enrich tables with detailed information
             for table in tables + views:
-                table.columns = await self._get_columns(
-                    conn, table.table_name, table.schema_name
-                )
+                table.columns = await self._get_columns(conn, table.table_name, table.schema_name)
                 primary_keys = await self._get_primary_keys(
                     conn, table.table_name, table.schema_name
                 )
@@ -82,9 +79,7 @@ class SchemaIntrospector:
                 table.foreign_keys = await self._get_foreign_keys(
                     conn, table.table_name, table.schema_name
                 )
-                table.indexes = await self._get_indexes(
-                    conn, table.table_name, table.schema_name
-                )
+                table.indexes = await self._get_indexes(conn, table.table_name, table.schema_name)
                 table.row_count_estimate = await self._get_row_count_estimate(
                     conn, table.table_name, table.schema_name
                 )
@@ -263,9 +258,12 @@ class SchemaIntrospector:
             FROM pg_constraint con
             JOIN pg_class c ON con.conrelid = c.oid
             JOIN pg_namespace n ON c.relnamespace = n.oid
-            JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = ANY(con.conkey)
+            JOIN pg_attribute a
+                ON a.attrelid = c.oid AND a.attnum = ANY(con.conkey)
             JOIN pg_class ref_c ON con.confrelid = ref_c.oid
-            JOIN pg_attribute ref_a ON ref_a.attrelid = ref_c.oid AND ref_a.attnum = ANY(con.confkey)
+            JOIN pg_attribute ref_a
+                ON ref_a.attrelid = ref_c.oid
+                AND ref_a.attnum = ANY(con.confkey)
             WHERE c.relname = $1
               AND n.nspname = $2
               AND con.contype = 'f'  -- foreign key

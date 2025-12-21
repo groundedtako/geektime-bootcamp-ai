@@ -12,7 +12,7 @@ Tests cover:
 import pytest
 
 from pg_mcp.config.settings import SecurityConfig
-from pg_mcp.models.errors import SQLParseError, SecurityViolationError
+from pg_mcp.models.errors import SecurityViolationError, SQLParseError
 from pg_mcp.services.sql_validator import SQLValidator
 
 
@@ -292,9 +292,7 @@ class TestSensitiveResources:
     def test_blocked_table_rejected(self) -> None:
         """Test access to blocked table is rejected."""
         config = SecurityConfig()
-        validator = SQLValidator(
-            config=config, blocked_tables=["passwords", "secrets", "api_keys"]
-        )
+        validator = SQLValidator(config=config, blocked_tables=["passwords", "secrets", "api_keys"])
 
         sql = "SELECT * FROM passwords"
         with pytest.raises(SecurityViolationError) as exc_info:
@@ -389,7 +387,7 @@ class TestMultiStatement:
         """Test SQL injection with UNION is handled (UNION itself is SQL-valid)."""
         # UNION is a valid SQL operation in SELECT, should be allowed
         sql = "SELECT id FROM users UNION SELECT id FROM orders"
-        is_valid, error = validator.validate(sql)
+        is_valid, _error = validator.validate(sql)
         assert is_valid  # UNION is valid in SELECT
 
     def test_sql_injection_attempt_insert(self, validator: SQLValidator) -> None:

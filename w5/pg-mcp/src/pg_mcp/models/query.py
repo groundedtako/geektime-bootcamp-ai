@@ -81,6 +81,27 @@ class ValidationResult(BaseModel):
         )
 
 
+class ResultValidationResult(BaseModel):
+    """Result of query result validation using LLM.
+
+    This model represents the outcome of validating whether query results
+    match the user's original question. It uses LLM to assess the semantic
+    correctness and relevance of the results.
+    """
+
+    confidence: int = Field(
+        ...,
+        ge=0,
+        le=100,
+        description="Confidence score (0-100) that results match the question",
+    )
+    explanation: str = Field(..., description="Explanation of the validation assessment")
+    suggestion: str | None = Field(None, description="Optional suggestion for improving the query")
+    is_acceptable: bool = Field(
+        ..., description="Whether results are acceptable based on confidence threshold"
+    )
+
+
 class QueryResult(BaseModel):
     """Result data from query execution."""
 

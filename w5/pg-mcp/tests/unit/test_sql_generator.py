@@ -4,8 +4,9 @@ This module tests the SQLGenerator class including SQL extraction logic,
 error handling, and OpenAI API integration (using mocks).
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from pydantic import SecretStr
 
 from pg_mcp.config.settings import OpenAIConfig
@@ -100,7 +101,7 @@ select * from Users;
 
         result = generator._extract_sql(content)
         assert result is not None
-        assert "select * from Users;" == result
+        assert result == "select * from Users;"
 
     def test_extract_sql_multiline(self, generator: SQLGenerator) -> None:
         """Test extraction of multiline query."""
@@ -281,11 +282,7 @@ class TestSQLGenerator:
         """Test simple query generation with mocked OpenAI response."""
         mock_response = MagicMock()
         mock_response.choices = [
-            MagicMock(
-                message=MagicMock(
-                    content="```sql\nSELECT * FROM users;\n```"
-                )
-            )
+            MagicMock(message=MagicMock(content="```sql\nSELECT * FROM users;\n```"))
         ]
 
         # Use AsyncMock for async method
@@ -340,11 +337,7 @@ class TestSQLGenerator:
         """Test generation with retry context (previous attempt + error)."""
         mock_response = MagicMock()
         mock_response.choices = [
-            MagicMock(
-                message=MagicMock(
-                    content="```sql\nSELECT COUNT(*) FROM users;\n```"
-                )
-            )
+            MagicMock(message=MagicMock(content="```sql\nSELECT COUNT(*) FROM users;\n```"))
         ]
 
         with patch.object(
@@ -450,11 +443,7 @@ class TestSQLGenerator:
         """Test handling when SQL cannot be extracted from response."""
         mock_response = MagicMock()
         mock_response.choices = [
-            MagicMock(
-                message=MagicMock(
-                    content="I cannot generate a query for this request."
-                )
-            )
+            MagicMock(message=MagicMock(content="I cannot generate a query for this request."))
         ]
 
         with patch.object(
@@ -483,9 +472,7 @@ ORDER BY ro.order_count DESC
 LIMIT 10;"""
 
         mock_response = MagicMock()
-        mock_response.choices = [
-            MagicMock(message=MagicMock(content=f"```sql\n{cte_sql}\n```"))
-        ]
+        mock_response.choices = [MagicMock(message=MagicMock(content=f"```sql\n{cte_sql}\n```"))]
 
         with patch.object(
             generator.client.chat.completions, "create", new=AsyncMock(return_value=mock_response)
@@ -498,9 +485,7 @@ LIMIT 10;"""
             assert "LIMIT 10;" in result
 
     @pytest.mark.asyncio
-    async def test_generate_respects_config_settings(
-        self, mock_schema: DatabaseSchema
-    ) -> None:
+    async def test_generate_respects_config_settings(self, mock_schema: DatabaseSchema) -> None:
         """Test that generator respects all config settings."""
         custom_config = OpenAIConfig(
             api_key=SecretStr("sk-custom-key"),
@@ -512,9 +497,7 @@ LIMIT 10;"""
         generator = SQLGenerator(custom_config)
 
         mock_response = MagicMock()
-        mock_response.choices = [
-            MagicMock(message=MagicMock(content="```sql\nSELECT 1;\n```"))
-        ]
+        mock_response.choices = [MagicMock(message=MagicMock(content="```sql\nSELECT 1;\n```"))]
 
         with patch.object(
             generator.client.chat.completions, "create", new=AsyncMock(return_value=mock_response)
@@ -532,9 +515,7 @@ LIMIT 10;"""
     ) -> None:
         """Test that schema context is included in the prompt."""
         mock_response = MagicMock()
-        mock_response.choices = [
-            MagicMock(message=MagicMock(content="```sql\nSELECT 1;\n```"))
-        ]
+        mock_response.choices = [MagicMock(message=MagicMock(content="```sql\nSELECT 1;\n```"))]
 
         with patch.object(
             generator.client.chat.completions, "create", new=AsyncMock(return_value=mock_response)

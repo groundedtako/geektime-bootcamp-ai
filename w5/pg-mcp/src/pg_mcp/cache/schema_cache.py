@@ -5,13 +5,17 @@ repeated introspection queries and improve performance.
 """
 
 import asyncio
-from datetime import datetime, timedelta, timezone
+import contextlib
+import logging
+from datetime import UTC, datetime
 
 from asyncpg import Pool
 
 from pg_mcp.config.settings import CacheConfig
 from pg_mcp.db.introspection import SchemaIntrospector
 from pg_mcp.models.schema import DatabaseSchema
+
+logger = logging.getLogger(__name__)
 
 
 class SchemaCache:
@@ -102,7 +106,7 @@ class SchemaCache:
 
         if self.config.enabled:
             self._cache[database_name] = schema
-            self._cache_timestamps[database_name] = datetime.now(timezone.utc)
+            self._cache_timestamps[database_name] = datetime.now(UTC)
 
         return schema
 
@@ -150,9 +154,7 @@ class SchemaCache:
             return
 
         self._stop_refresh = False
-        self._refresh_task = asyncio.create_task(
-            self._auto_refresh_loop(interval_minutes, pools)
-        )
+        self._refresh_task = asyncio.create_task(self._auto_refresh_loop(interval_minutes, pools))
 
     async def stop_auto_refresh(self) -> None:
         """Stop automatic refresh task.
@@ -167,12 +169,10 @@ class SchemaCache:
         if self._refresh_task is not None and not self._refresh_task.done():
             try:
                 await asyncio.wait_for(self._refresh_task, timeout=5.0)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 self._refresh_task.cancel()
-                try:
+                with contextlib.suppress(asyncio.CancelledError):
                     await self._refresh_task
-                except asyncio.CancelledError:
-                    pass
 
     async def _auto_refresh_loop(
         self,
@@ -198,18 +198,14 @@ class SchemaCache:
                 # Refresh all cached schemas
                 for database_name, pool in pools.items():
                     if database_name in self._cache:
-                        try:
+                        with contextlib.suppress(Exception):
                             await self.refresh(database_name, pool)
-                        except Exception:
-                            # Log error but continue refreshing other databases
-                            # In production, use proper logging
-                            pass
 
             except asyncio.CancelledError:
                 break
-            except Exception:
-                # In production, use proper logging
-                pass
+            except Exception as e:
+                # Log error but continue
+                logger.exception("Error during schema refresh: %s", e)
 
     def get_cache_age(self, database_name: str) -> float | None:
         """Get cache age in seconds.
@@ -229,7 +225,7 @@ class SchemaCache:
             return None
 
         timestamp = self._cache_timestamps[database_name]
-        age = datetime.now(timezone.utc) - timestamp
+        age = datetime.now(UTC) - timestamp
         return age.total_seconds()
 
     def clear(self, database_name: str | None = None) -> None:

@@ -10,7 +10,9 @@ if TYPE_CHECKING:
     from pg_mcp.models.schema import DatabaseSchema
 
 
-SQL_GENERATION_SYSTEM_PROMPT = """You are a PostgreSQL SQL expert. Your task is to convert natural language questions into valid PostgreSQL SQL queries.
+SQL_GENERATION_SYSTEM_PROMPT = """You are a PostgreSQL SQL expert.
+
+Your task is to convert natural language questions into valid PostgreSQL SQL queries.
 
 ## Rules:
 1. ONLY generate SELECT queries or CTE (WITH ... SELECT) queries
